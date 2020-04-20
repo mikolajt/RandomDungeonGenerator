@@ -1,0 +1,15 @@
+body
+{
+    background-color: #f0de8e;
+}
+h1
+{
+    text-align: center;
+}
+#button-generate
+{
+    display: block;
+    margin-top: 100px;
+    margin-left: auto;
+    margin-right: auto;
+}
