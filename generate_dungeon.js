@@ -1,12 +1,14 @@
 let canvas = document.getElementById("dungeon-canvas");
 let ctx = canvas.getContext("2d");
 let cells = [];
+let cell_id_counter = 0;
 const radius = canvas.width/4;
-const number_of_cells = 2;
+const number_of_cells = 100;
 const max_cell_size = 20;
 const min_cell_size = 10;
 
 function Cell(x, y, width, height) {
+    this.cell_id = cell_id_counter++;
     this.x = x;
     this.y = y;
     this.width = width;
@@ -25,9 +27,9 @@ function draw() {
     for(i = 0; i < number_of_cells; i++)
     {
         ctx.strokeStyle = "red";
-        ctx.strokeRect(cells[i].x, cells[i].y, cells[i].width, cells[i].height);
-        ctx.fillRect(cells[i].x, cells[i].y, cells[i].width, cells[i].height);
-        console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height);
+        ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y + cells[i].height/2, cells[i].width, cells[i].height);
+        ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y + cells[i].height/2, cells[i].width, cells[i].height);
+        console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height + "," + cells[i].cell_id);
     }
 }
 
@@ -61,27 +63,34 @@ function separateCells() {
         this.x = x;
         this.y = y;
 
-        this.normalize = function() {
+        this.normalize = function(x) {
             let length = Math.hypot(this.x, this.y);
-            this.x = this.x/length;
-            this.y = this.y/length;
+            this.x = this.x/length * x;
+            this.y = this.y/length * x;
         }
     }
     
     function cellSeparationVector(currentCell) {
         function calculateDistance(cell1, cell2) {
-            let a = cell1.x - cell2.x;
-            let b = cell1.y - cell2.y;
-    
-            return Math.hypot(a, b);
+            return [cell1.x - cell2.x, cell1.y - cell2.y];
         }
         let v = new Vector(0, 0);
         let neighborCount = 0;
+        let distance;
+        let isNeighbor;
         cells.forEach(cell => {
             if(currentCell != cell) {
-                if(calculateDistance(currentCell, cell) < Math.hypot(currentCell.height, currentCell.width)) {
+                distance = calculateDistance(currentCell, cell);
+                isNeighbor = false;
+                if(Math.abs(distance[0]) <= currentCell.width/2 + cell.width/2) {
                     v.x += cell.x - currentCell.x;
+                    isNeighbor = true;
+                }
+                if(Math.abs(distance[1]) <= currentCell.height/2 + cell.height/2) {
                     v.y += cell.y - currentCell.y;
+                    isNeighbor = true;
+                }
+                if(isNeighbor) {
                     neighborCount++;
                 }
             }
@@ -94,16 +103,29 @@ function separateCells() {
             v.y *= -1;
             v.x /= neighborCount;
             v.y /= neighborCount;
-            v.normalize();
+            v.normalize(1);
             return v;
         }
     }
-    
-    cells.forEach(cell => {
-        let vector = cellSeparationVector(cell);
-        cell.x += vector.x;
-        cell.y += vector.y; 
-    });
+
+    let separatedCounter;
+    for(i=0; i<100; i++)
+    {
+        separatedCounter = 0;
+        cells.forEach(cell => {
+            let vector = cellSeparationVector(cell);
+            if(vector.x == 0 && vector.y == 0) {
+                separatedCounter++;
+            }
+            else {
+                cell.x += vector.x;
+                cell.y += vector.y; 
+            }
+        });
+        if (separatedCounter >= cells.length) {
+            break;
+        }
+    }
 }
 
 
