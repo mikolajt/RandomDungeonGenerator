@@ -3,9 +3,9 @@ let ctx = canvas.getContext("2d");
 let cells = [];
 let cell_id_counter = 0;
 const radius = canvas.width/4;
-const number_of_cells = 100;
-const max_cell_size = 20;
-const min_cell_size = 10;
+const number_of_cells = 50;
+const max_cell_size = 30;
+const min_cell_size = 20;
 
 function Cell(x, y, width, height) {
     this.cell_id = cell_id_counter++;
@@ -13,19 +13,41 @@ function Cell(x, y, width, height) {
     this.y = y;
     this.width = width;
     this.height = height;
+    this.isRoom = false;
 }
 
 generateCells();
 separateCells();
+chooseRooms(1.25);
 draw();
 
 function draw() {
+    function drawGrid(grid_size) {
+        ctx.strokeStyle = "grey";
+        for(i=0; i<=grid_size; i++) {
+        ctx.moveTo(0, canvas.width/grid_size*i);
+        ctx.lineTo(canvas.width, canvas.width/grid_size * i);
+        ctx.stroke();
+    
+        ctx.moveTo(canvas.height / grid_size * i, 0);
+        ctx.lineTo(canvas.height / grid_size * i, canvas.height);
+        ctx.stroke();
+        }
+    }
+
+    drawGrid(20);
     ctx.beginPath();
     ctx.arc(canvas.width/2, canvas.height/2, radius, 0, 2*Math.PI);
     ctx.stroke();
 
     for(i = 0; i < number_of_cells; i++)
     {
+        if (cells[i].isRoom) {
+            ctx.fillStyle = "red";
+        }
+        else {
+            ctx.fillStyle = "black";
+        }
         ctx.strokeStyle = "red";
         ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y + cells[i].height/2, cells[i].width, cells[i].height);
         ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y + cells[i].height/2, cells[i].width, cells[i].height);
@@ -103,7 +125,7 @@ function separateCells() {
             v.y *= -1;
             v.x /= neighborCount;
             v.y /= neighborCount;
-            v.normalize(1);
+            v.normalize(3);
             return v;
         }
     }
@@ -126,15 +148,12 @@ function separateCells() {
             break;
         }
     }
+}   
+
+function chooseRooms(room_size) {
+    for(i = 0; i < cells.length; i++) {
+        if (cells[i].width >= room_size * min_cell_size && cells[i].height >= room_size * min_cell_size) {
+            cells[i].isRoom = true;
+        }
+    }
 }
-
-
-/*for(i=0; i<=10; i++) {
-    ctx.moveTo(0, 20*i);
-    ctx.lineTo(canvas.width, 20*i);
-    ctx.stroke();
-
-    ctx.moveTo(20*i, 0);
-    ctx.lineTo(20*i, canvas.height);
-    ctx.stroke();
-}*/
