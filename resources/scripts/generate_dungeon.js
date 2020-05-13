@@ -56,6 +56,8 @@ function draw() {
 }
 
 function RandomPointInCircle(radius) {
+    //from https://stackoverflow.com/questions/5837572/generate-a-random-point-within-a-circle-uniformly
+
     let t = 2 * Math.PI * Math.random();
     let u = Math.random() + Math.random();
     let r;
