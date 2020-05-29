@@ -1,11 +1,14 @@
-let canvas = document.getElementById("dungeon-canvas");
-let ctx = canvas.getContext("2d");
-let cells = [];
-let cell_id_counter = 0;
+import { triangle, vertex, triangulate } from './triangulation.js';
+
+let canvas = document.getElementById("dungeon-canvas"),
+ ctx = canvas.getContext("2d"),
+ cells = [],
+ cell_id_counter = 0,
+ triangles = [];
 const radius = canvas.width/4;
-const number_of_cells = 50;
-const max_cell_size = 30;
-const min_cell_size = 20;
+const number_of_cells = 70;
+const max_cell_size = 100;
+const min_cell_size = 50;
 
 function Cell(x, y, width, height) {
     this.cell_id = cell_id_counter++;
@@ -19,12 +22,13 @@ function Cell(x, y, width, height) {
 generateCells();
 separateCells();
 chooseRooms(1.25);
+createTriangles();
 draw();
 
 function draw() {
     function drawGrid(grid_size) {
         ctx.strokeStyle = "grey";
-        for(i=0; i<=grid_size; i++) {
+        for(let i=0; i<=grid_size; i++) {
         ctx.moveTo(0, canvas.width/grid_size*i);
         ctx.lineTo(canvas.width, canvas.width/grid_size * i);
         ctx.stroke();
@@ -40,7 +44,7 @@ function draw() {
     ctx.arc(canvas.width/2, canvas.height/2, radius, 0, 2*Math.PI);
     ctx.stroke();
 
-    for(i = 0; i < number_of_cells; i++)
+    for(let i = 0; i < number_of_cells; i++)
     {
         if (cells[i].isRoom) {
             ctx.fillStyle = "red";
@@ -49,9 +53,22 @@ function draw() {
             ctx.fillStyle = "black";
         }
         ctx.strokeStyle = "red";
-        ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y + cells[i].height/2, cells[i].width, cells[i].height);
-        ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y + cells[i].height/2, cells[i].width, cells[i].height);
+        ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
+        ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
         console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height + "," + cells[i].cell_id);
+    }
+
+    if(triangles != null) {
+        triangles.forEach(triangle => {
+        ctx.beginPath();
+        ctx.strokeStyle = "black";
+        ctx.moveTo(triangle.v0.x, triangle.v0.y);
+        ctx.lineTo(triangle.v1.x, triangle.v1.y);
+        ctx.lineTo(triangle.v2.x, triangle.v2.y);
+        ctx.lineTo(triangle.v0.x, triangle.v0.y);
+        ctx.closePath();
+        ctx.stroke();
+    })
     }
 }
 
@@ -73,7 +90,7 @@ function RandomPointInCircle(radius) {
 }
 
 function generateCells() {
-    for(i = 0; i < number_of_cells; i++) {
+    for(let i = 0; i < number_of_cells; i++) {
         let point = RandomPointInCircle(radius);
         let pointX = point[0];
         let pointY = point[1];
@@ -133,7 +150,7 @@ function separateCells() {
     }
 
     let separatedCounter;
-    for(i=0; i<100; i++)
+    for(let i=0; i<100; i++)
     {
         separatedCounter = 0;
         cells.forEach(cell => {
@@ -153,9 +170,19 @@ function separateCells() {
 }   
 
 function chooseRooms(room_size) {
-    for(i = 0; i < cells.length; i++) {
+    for(let i = 0; i < cells.length; i++) {
         if (cells[i].width >= room_size * min_cell_size && cells[i].height >= room_size * min_cell_size) {
             cells[i].isRoom = true;
         }
     }
+}
+
+function createTriangles() {
+    let vertexes = [];
+    cells.forEach(cell => {
+        if(cell.isRoom) {
+            vertexes.push(new vertex(cell.x, cell.y));
+        }
+        triangles = triangulate(vertexes);
+    })
 }
