@@ -3,9 +3,13 @@ export function vertex(x, y) {
     this.y = y;
 }
 
-function edge (v0, v1) {
+export function edge (v0, v1) {
     this.v0 = v0;
     this.v1 = v1;
+
+    this.weight = () => {
+        return Math.hypot(this.v0.x - this.v1.x, this.v0.y - this.v1.y);
+    }
 }
 
 export function triangle (v0, v1, v2) {

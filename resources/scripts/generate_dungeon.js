@@ -1,10 +1,11 @@
-import { triangle, vertex, triangulate } from './triangulation.js';
+import { triangle, edge, vertex, triangulate } from './triangulation.js';
 
 let canvas = document.getElementById("dungeon-canvas"),
  ctx = canvas.getContext("2d"),
  cells = [],
  cell_id_counter = 0,
- triangles = [];
+ triangles = [],
+ minimumSpanningTree = [];
 const radius = canvas.width/4;
 const number_of_cells = 70;
 const max_cell_size = 100;
@@ -23,6 +24,7 @@ generateCells();
 separateCells();
 chooseRooms(1.25);
 createTriangles();
+minimumSpanningTree = minSpanningTree();
 draw();
 
 function draw() {
@@ -39,10 +41,10 @@ function draw() {
         }
     }
 
-    drawGrid(20);
-    ctx.beginPath();
-    ctx.arc(canvas.width/2, canvas.height/2, radius, 0, 2*Math.PI);
-    ctx.stroke();
+    //drawGrid(20);
+    //ctx.beginPath();
+    //ctx.arc(canvas.width/2, canvas.height/2, radius, 0, 2*Math.PI);
+    //ctx.stroke();
 
     for(let i = 0; i < number_of_cells; i++)
     {
@@ -58,7 +60,7 @@ function draw() {
         console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height + "," + cells[i].cell_id);
     }
 
-    if(triangles != null) {
+    /*if(triangles != null) {
         triangles.forEach(triangle => {
         ctx.beginPath();
         ctx.strokeStyle = "black";
@@ -66,6 +68,16 @@ function draw() {
         ctx.lineTo(triangle.v1.x, triangle.v1.y);
         ctx.lineTo(triangle.v2.x, triangle.v2.y);
         ctx.lineTo(triangle.v0.x, triangle.v0.y);
+        ctx.closePath();
+        ctx.stroke();
+    })*/
+
+    if(minimumSpanningTree != null) {
+        minimumSpanningTree.forEach(edge => {
+        ctx.beginPath();
+        ctx.strokeStyle = "black";
+        ctx.moveTo(edge.v0.x, edge.v0.y);
+        ctx.lineTo(edge.v1.x, edge.v1.y);
         ctx.closePath();
         ctx.stroke();
     })
@@ -185,4 +197,43 @@ function createTriangles() {
         }
         triangles = triangulate(vertexes);
     })
+}
+
+function minSpanningTree() {
+    let edges = [],
+        rooms_count = cells.reduce(function(n, cell){
+            return n + (cell.isRoom);
+        }, 0),
+        spanningTree = [],
+        i = 0,
+        spanningTreeVertexes = [];
+
+    triangles.forEach(triangle => {
+        edges.push(...triangle.triangleToEdges());
+    })
+
+    edges.sort(function(a, b){
+        return a.weight() - b.weight();
+    })
+
+    /*edges.forEach(edge => {
+        console.log("E: " + edge.weight());
+    })*/
+    console.log(rooms_count - 1);
+
+    while(spanningTree.length < rooms_count - 1) {
+        if(!(spanningTreeVertexes.includes(edges[i].v0) && spanningTreeVertexes.includes(edges[i].v1))) {
+            spanningTreeVertexes.push(edges[i].v0);
+            spanningTreeVertexes.push(edges[i].v1);
+            spanningTree.push(edges[i]);
+        }
+        i++;
+        if(i >= edges.length)
+        {
+            break;
+        }
+    }
+    console.log(spanningTree.length);
+
+    return spanningTree;
 }
