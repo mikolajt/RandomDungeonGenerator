@@ -1,30 +1,39 @@
 import { triangle, edge, vertex, triangulate } from './triangulation.js';
 
 let canvas = document.getElementById("dungeon-canvas"),
- ctx = canvas.getContext("2d"),
- cells = [],
- cell_id_counter = 0,
- triangles = [],
- minimumSpanningTree = [];
+    ctx = canvas.getContext("2d"),
+    cells = [],
+    cell_id_counter = 0,
+    triangles = [],
+    graph = [],
+    edges = [];
 const radius = canvas.width/4;
-const number_of_cells = 70;
+const number_of_cells = 50;
 const max_cell_size = 100;
 const min_cell_size = 50;
 
 function Cell(x, y, width, height) {
-    this.cell_id = cell_id_counter++;
+    this.cell_id = -1;
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
     this.isRoom = false;
+
+    this.generateId = () => {
+        if(this.isRoom == true) {
+            this.cell_id = cell_id_counter++;
+        }
+    }
 }
 
 generateCells();
 separateCells();
-chooseRooms(1.25);
+chooseRooms(1.5);
 createTriangles();
-minimumSpanningTree = minSpanningTree();
+edges = getEdges();
+graph = minSpanningTree();
+additionalEdges(0.1);
 draw();
 
 function draw() {
@@ -72,8 +81,8 @@ function draw() {
         ctx.stroke();
     })*/
 
-    if(minimumSpanningTree != null) {
-        minimumSpanningTree.forEach(edge => {
+    if(graph != null) {
+        graph.forEach(edge => {
         ctx.beginPath();
         ctx.strokeStyle = "black";
         ctx.moveTo(edge.v0.x, edge.v0.y);
@@ -185,6 +194,7 @@ function chooseRooms(room_size) {
     for(let i = 0; i < cells.length; i++) {
         if (cells[i].width >= room_size * min_cell_size && cells[i].height >= room_size * min_cell_size) {
             cells[i].isRoom = true;
+            cells[i].generateId();
         }
     }
 }
@@ -193,47 +203,104 @@ function createTriangles() {
     let vertexes = [];
     cells.forEach(cell => {
         if(cell.isRoom) {
-            vertexes.push(new vertex(cell.x, cell.y));
+            vertexes.push(cell);
         }
         triangles = triangulate(vertexes);
     })
 }
 
-function minSpanningTree() {
-    let edges = [],
-        rooms_count = cells.reduce(function(n, cell){
-            return n + (cell.isRoom);
-        }, 0),
-        spanningTree = [],
-        i = 0,
-        spanningTreeVertexes = [];
+function getEdges() {
+    let edges = [];
 
     triangles.forEach(triangle => {
         edges.push(...triangle.triangleToEdges());
     })
 
+    return edges;
+}
+
+function minSpanningTree() {
+    function subset(parent) {
+        this.parent = parent;
+        this.root = 0;
+    }
+
+    function find(subsets, i) {
+        if (subsets[i].parent != i) {
+            subsets[i].parent = find(subsets, subsets[i].parent)
+        }
+        return subsets[i].parent;
+    }
+
+    function union(subsets, x, y) {
+
+        let xroot = find(subsets, x),
+            yroot = find(subsets, y);
+
+        if(subsets[xroot].rank < subsets[yroot.rank]) {
+            subsets[xroot].parent = yroot;
+        }
+        else if(subsets[xroot].rank > subsets[yroot].rank) {
+            subsets[yroot].parent = xroot;
+        }
+        else {
+            subsets[yroot].parent = xroot;
+            subsets[xroot].rank++;
+        }
+
+    }
+
+    let rooms_count = cells.reduce(function(n, cell){
+            return n + (cell.isRoom);
+        }, 0),
+        spanningTree = [],
+        index1 = 0,
+        index2 = 0,
+        x,
+        y,
+        subsets = [],
+        next_edge = new edge();
+    
+    for(let i = 0; i<rooms_count; i++) {
+        subsets[i] = new subset(i);
+    }
+
     edges.sort(function(a, b){
         return a.weight() - b.weight();
     })
 
-    /*edges.forEach(edge => {
-        console.log("E: " + edge.weight());
-    })*/
-    console.log(rooms_count - 1);
+    while(index1 < rooms_count - 1) {
 
-    while(spanningTree.length < rooms_count - 1) {
-        if(!(spanningTreeVertexes.includes(edges[i].v0) && spanningTreeVertexes.includes(edges[i].v1))) {
-            spanningTreeVertexes.push(edges[i].v0);
-            spanningTreeVertexes.push(edges[i].v1);
-            spanningTree.push(edges[i]);
+        next_edge = edges[index2++];
+        x = find(subsets, next_edge.v0.cell_id);
+        y = find(subsets, next_edge.v1.cell_id);
+
+        if (x != y) {
+            spanningTree[index1++] = next_edge;
+            union(subsets, x, y);
         }
-        i++;
-        if(i >= edges.length)
-        {
-            break;
+
+    }
+    return spanningTree;
+}
+
+function additionalEdges(percent) {
+    let additionalEdgesNumber = Math.round(edges.length * percent),
+        random;
+
+    for(let i = 0; i < additionalEdgesNumber; i++) {
+        random = Math.floor(Math.random() * edges.length);
+
+        if(graph.includes(edges[random])) {
+            i--;
+            continue;
+        }
+        else {
+            graph.push(edges[random]);
         }
     }
-    console.log(spanningTree.length);
+}
 
-    return spanningTree;
+function makeHallways() {
+    
 }
