@@ -6,11 +6,12 @@ let canvas = document.getElementById("dungeon-canvas"),
     cell_id_counter = 0,
     triangles = [],
     graph = [],
-    edges = [];
-const radius = canvas.width/4;
-const number_of_cells = 50;
-const max_cell_size = 100;
-const min_cell_size = 50;
+    edges = [],
+    hallways = [];
+const radius = canvas.width/4,
+      number_of_cells = 50,
+      max_cell_size = 100,
+      min_cell_size = 50;
 
 function Cell(x, y, width, height) {
     this.cell_id = -1;
@@ -27,6 +28,11 @@ function Cell(x, y, width, height) {
     }
 }
 
+function Hall(c0, c1) {
+    this.c0 = c0;
+    this.c1 = c1;
+}
+
 generateCells();
 separateCells();
 chooseRooms(1.5);
@@ -34,6 +40,7 @@ createTriangles();
 edges = getEdges();
 graph = minSpanningTree();
 additionalEdges(0.1);
+hallways = makeHallways();
 draw();
 
 function draw() {
@@ -58,12 +65,12 @@ function draw() {
     for(let i = 0; i < number_of_cells; i++)
     {
         if (cells[i].isRoom) {
-            ctx.fillStyle = "red";
+            //ctx.fillStyle = "red";
         }
         else {
             ctx.fillStyle = "black";
         }
-        ctx.strokeStyle = "red";
+        //ctx.strokeStyle = "red";
         ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
         ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
         console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height + "," + cells[i].cell_id);
@@ -81,12 +88,24 @@ function draw() {
         ctx.stroke();
     })*/
 
-    if(graph != null) {
+    /*if(graph != null) {
         graph.forEach(edge => {
         ctx.beginPath();
         ctx.strokeStyle = "black";
         ctx.moveTo(edge.v0.x, edge.v0.y);
         ctx.lineTo(edge.v1.x, edge.v1.y);
+        ctx.closePath();
+        ctx.stroke();
+    })
+    }*/
+
+    if(hallways != null) {
+        hallways.forEach(hall => {
+        ctx.beginPath();
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 10;
+        ctx.moveTo(hall.c0.x, hall.c0.y);
+        ctx.lineTo(hall.c1.x, hall.c1.y);
         ctx.closePath();
         ctx.stroke();
     })
@@ -302,5 +321,19 @@ function additionalEdges(percent) {
 }
 
 function makeHallways() {
-    
+    let halls = [],
+        cell;
+
+    edges.forEach(edge => {
+        if(Math.abs(edge.v0.x - edge.v1.x) < max_cell_size || Math.abs(edge.v0.y - edge.v1.y) < max_cell_size) {
+            halls.push(new Hall(edge.v0, edge.v1));
+        } 
+        else {
+            cell = new Cell(edge.v0.x, edge.v1.y, 0, 0);
+            halls.push(new Hall(edge.v0, cell));
+            halls.push(new Hall(edge.v1, cell));
+        }
+    })
+    halls = halls.filter((value, index, array) => array.indexOf(value) === index);
+    return halls;
 }

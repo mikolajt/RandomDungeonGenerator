@@ -3,7 +3,7 @@ export function vertex(x, y) {
     this.y = y;
 }
 
-export function edge (v0, v1) {
+export function edge(v0, v1) {
     this.v0 = v0;
     this.v1 = v1;
 
