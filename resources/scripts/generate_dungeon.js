@@ -11,7 +11,8 @@ let canvas = document.getElementById("dungeon-canvas"),
 const radius = canvas.width/4,
       number_of_cells = 50,
       max_cell_size = 100,
-      min_cell_size = 50;
+      min_cell_size = 50,
+      hall_width = 10;
 
 function Cell(x, y, width, height) {
     this.cell_id = -1;
@@ -41,11 +42,13 @@ edges = getEdges();
 graph = minSpanningTree();
 additionalEdges(0.1);
 hallways = makeHallways();
+addIntersectingRooms();
 draw();
 
 function draw() {
     function drawGrid(grid_size) {
         ctx.strokeStyle = "grey";
+        //ctx.lineWidth = 10;
         for(let i=0; i<=grid_size; i++) {
         ctx.moveTo(0, canvas.width/grid_size*i);
         ctx.lineTo(canvas.width, canvas.width/grid_size * i);
@@ -66,14 +69,17 @@ function draw() {
     {
         if (cells[i].isRoom) {
             //ctx.fillStyle = "red";
-        }
-        else {
-            ctx.fillStyle = "black";
-        }
-        //ctx.strokeStyle = "red";
         ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
         ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
         console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height + "," + cells[i].cell_id);
+        }
+        //else {
+            //ctx.fillStyle = "black";
+       // }
+        //ctx.strokeStyle = "red";
+        //ctx.strokeRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
+        //ctx.fillRect(cells[i].x - cells[i].width/2, cells[i].y - cells[i].height/2, cells[i].width, cells[i].height);
+        //console.log(cells[i].x + "," + cells[i].y + "," + cells[i].width + "," + cells[i].height + "," + cells[i].cell_id);
     }
 
     /*if(triangles != null) {
@@ -103,7 +109,7 @@ function draw() {
         hallways.forEach(hall => {
         ctx.beginPath();
         ctx.strokeStyle = "black";
-        ctx.lineWidth = 10;
+        ctx.lineWidth = hall_width;
         ctx.moveTo(hall.c0.x, hall.c0.y);
         ctx.lineTo(hall.c1.x, hall.c1.y);
         ctx.closePath();
@@ -163,11 +169,11 @@ function separateCells() {
             if(currentCell != cell) {
                 distance = calculateDistance(currentCell, cell);
                 isNeighbor = false;
-                if(Math.abs(distance[0]) <= currentCell.width/2 + cell.width/2) {
+                if(Math.abs(distance[0]) <= currentCell.width/2 + cell.width/2 || Math.abs(distance[0]) <= currentCell.height/2 + cell.height/2) {
                     v.x += cell.x - currentCell.x;
                     isNeighbor = true;
                 }
-                if(Math.abs(distance[1]) <= currentCell.height/2 + cell.height/2) {
+                if(Math.abs(distance[1]) <= currentCell.height/2 + cell.height/2 || Math.abs(distance[1]) <= currentCell.width/2 + cell.width/2) {
                     v.y += cell.y - currentCell.y;
                     isNeighbor = true;
                 }
@@ -336,4 +342,50 @@ function makeHallways() {
     })
     halls = halls.filter((value, index, array) => array.indexOf(value) === index);
     return halls;
+}
+
+function addIntersectingRooms() {
+    function determineLeft(hall) {
+        if(Math.min(hall.c0.x) < Math.min(hall.c1.x)) {
+            return hall.c0;
+        }
+        return hall.c1;
+    }
+    function determineRight(hall) {
+        if(Math.min(hall.c0.x) < Math.min(hall.c1.x)) {
+            return hall.c1;
+        }
+        return hall.c0;
+    }
+    function determineTop(hall) {
+        if(Math.min(hall.c0.y) < Math.min(hall.c1.y)) {
+            return hall.c1;
+        }
+        return hall.c0;
+    }
+    function determineBot(hall) {
+        if(Math.min(hall.c0.y) < Math.min(hall.c1.y)) {
+            return hall.c0;
+        }
+        return hall.c1;
+    }
+    cells.forEach(cell => {
+        if(cell.isRoom) {
+            return true;
+        }
+        hallways.forEach(hall => {
+            let l = determineLeft(hall);
+            let r = determineRight(hall);
+            let t = determineTop(hall);
+            let b = determineBot(hall);
+            if(cell.x - cell.width/2 >= r.x || l.x >= cell.x + cell.width/2) {
+                return true;
+            }
+            if(cell.y + cell.height/2 <= b.y - hall_width || t.y + hall_width <= cell.y - cell.height/2){
+                return true;
+            }
+            cell.isRoom = true;
+            return false;
+        })
+    });
 }
