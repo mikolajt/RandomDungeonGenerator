@@ -169,12 +169,20 @@ function separateCells() {
             if(currentCell != cell) {
                 distance = calculateDistance(currentCell, cell);
                 isNeighbor = false;
-                if(Math.abs(distance[0]) <= currentCell.width/2 + cell.width/2 || Math.abs(distance[0]) <= currentCell.height/2 + cell.height/2) {
+                if(Math.abs(distance[0]) < currentCell.width/2 + cell.width/2) {
                     v.x += cell.x - currentCell.x;
                     isNeighbor = true;
                 }
-                if(Math.abs(distance[1]) <= currentCell.height/2 + cell.height/2 || Math.abs(distance[1]) <= currentCell.width/2 + cell.width/2) {
+                else if(Math.abs(distance[0]) == currentCell.width/2 + cell.width/2) {
+                    v.x += 10;
+                    isNeighbor = true;
+                }
+                if(Math.abs(distance[1]) < currentCell.height/2 + cell.height/2) {
                     v.y += cell.y - currentCell.y;
+                    isNeighbor = true;
+                }
+                else if(Math.abs(distance[1]) == currentCell.height/2 + cell.height/2) {
+                    v.y += 10;
                     isNeighbor = true;
                 }
                 if(isNeighbor) {
@@ -200,6 +208,7 @@ function separateCells() {
     {
         separatedCounter = 0;
         cells.forEach(cell => {
+            cellSeparationVector(cell);
             let vector = cellSeparationVector(cell);
             if(vector.x == 0 && vector.y == 0) {
                 separatedCounter++;
@@ -210,7 +219,7 @@ function separateCells() {
             }
         });
         if (separatedCounter >= cells.length) {
-            break;
+           break;
         }
     }
 }   
@@ -330,7 +339,7 @@ function makeHallways() {
     let halls = [],
         cell;
 
-    edges.forEach(edge => {
+    graph.forEach(edge => {
         if(Math.abs(edge.v0.x - edge.v1.x) < max_cell_size || Math.abs(edge.v0.y - edge.v1.y) < max_cell_size) {
             halls.push(new Hall(edge.v0, edge.v1));
         } 
